@@ -27,6 +27,13 @@ void print_all(struct whale *arr, int count) {
   }
 }
 
+void print_all_bin(struct whale_bin *arr, int count) {
+  for (int i = 0; i < count; i++) {
+    printf("%d: name: %s ; length: %d ; mass: %d\n", i + 1, arr[i].name,
+           arr[i].length_scaled, arr[i].mass);
+  }
+}
+
 struct whale *find_heaviest(struct whale *arr, int count) {
   struct whale *heaviest = &arr[0];
 
@@ -303,5 +310,7 @@ int main(void) {
   save_binary("whales.bin", whales, loaded);
 
   struct whale_bin whales_bin[100];
-  load_whales_bin("whales.bin", whales_bin, 100);
+  int loaded_bin = load_whales_bin("whales.bin", whales_bin, 100);
+
+  print_all_bin(whales_bin, loaded_bin);
 }
