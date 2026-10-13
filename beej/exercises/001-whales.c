@@ -3,15 +3,15 @@
 #include <string.h>
 
 struct whale_bin_header {
-  uint8_t count;
+  uint16_t count;
   char signature[4];
 };
 
 struct whale_bin {
   uint8_t name_length;
   char name[32];
-  uint16_t length_scaled;
-  uint16_t mass;
+  uint32_t length_scaled;
+  uint32_t mass;
 };
 
 struct whale {
@@ -45,6 +45,12 @@ int raise_write_err(FILE *fp) {
   return -1;
 }
 
+int raise_read_err(FILE *fp) {
+  perror("fread");
+  fclose(fp);
+  return -1;
+}
+
 int save_binary(const char *path, struct whale *arr, int count) {
   int i;
 
@@ -66,7 +72,7 @@ int save_binary(const char *path, struct whale *arr, int count) {
   // Writing to the binary file
   FILE *fp;
 
-  fp = fopen("whales.bin", "wb");
+  fp = fopen(path, "wb");
 
   if (fp == NULL) {
     perror("fopen");
@@ -98,12 +104,12 @@ int save_binary(const char *path, struct whale *arr, int count) {
       return raise_write_err(fp);
 
     // -- length --
-    wc = fwrite(&whales_bin[i].length_scaled, sizeof(uint16_t), 1, fp);
+    wc = fwrite(&whales_bin[i].length_scaled, sizeof(uint32_t), 1, fp);
     if (wc != 1)
       return raise_write_err(fp);
 
     // -- mass --
-    wc = fwrite(&whales_bin[i].mass, sizeof(uint16_t), 1, fp);
+    wc = fwrite(&whales_bin[i].mass, sizeof(uint32_t), 1, fp);
     if (wc != 1)
       return raise_write_err(fp);
   }
@@ -117,6 +123,124 @@ int save_binary(const char *path, struct whale *arr, int count) {
   printf("Successfully wrote %d whales to %s\n", header.count, path);
 
   return 0;
+}
+
+int load_whales_bin(const char *path, struct whale_bin *arr, int limit) {
+  FILE *fp;
+  int i;
+  int loaded;
+  int skip_count = 0;
+  int rc;
+
+  fp = fopen(path, "rb");
+
+  if (fp == NULL) {
+    perror("fopen");
+    return -1;
+  }
+
+  // -- signature --
+  char sig_head[4];
+  char expected_sig_head[] = {'W', 'H', 'L', '1'};
+
+  for (i = 0; i < 4; i++) {
+    rc = fread(&sig_head[i], sizeof(char), 1, fp);
+
+    if (rc != 1)
+      return raise_read_err(fp);
+
+    if (sig_head[i] != expected_sig_head[i]) {
+      fprintf(stderr, "load_whales_bin: bad signature in %s\n", path);
+      fclose(fp);
+      return -1;
+    }
+  }
+
+  // -- count --
+  uint16_t count;
+
+  rc = fread(&count, sizeof(uint16_t), 1, fp);
+
+  if (rc != 1)
+    return raise_read_err(fp);
+
+  // -- whales_bin --
+  for (i = 0; i < count; i++) {
+    // -- limit check --
+    if (i == limit) {
+      break;
+    }
+
+    // -- name size --
+
+    uint8_t name_length = 0;
+    rc = fread(&name_length, sizeof(uint8_t), 1, fp);
+
+    if (rc != 1)
+      return raise_read_err(fp);
+
+    // -- name --
+    char name[name_length];
+
+    for (int c = 0; c < name_length; c++) {
+      rc = fread(&name[c], sizeof(char), 1, fp);
+
+      if (rc != 1)
+        return raise_read_err(fp);
+    }
+
+    if (name[name_length - 1] != '\0') {
+      printf("Skipping line %d due to malformed name\n", i);
+      skip_count++;
+      continue;
+    }
+
+    // -- length --
+    uint32_t length_scaled = 0;
+    rc = fread(&length_scaled, sizeof(uint32_t), 1, fp);
+
+    if (rc != 1)
+      return raise_read_err(fp);
+
+    // -- mass --
+    uint32_t mass = 0;
+    rc = fread(&mass, sizeof(uint32_t), 1, fp);
+
+    if (rc != 1)
+      return raise_read_err(fp);
+
+    // -- write to given array --
+    arr[i].name_length = name_length;
+    strcpy(arr[i].name, name);
+    arr[i].length_scaled = length_scaled;
+    arr[i].mass = mass;
+  }
+
+  loaded = i;
+
+  // -- signature --
+  char sig_footer[4];
+
+  for (i = 0; i < 4; i++) {
+    rc = fread(&sig_footer[i], sizeof(char), 1, fp);
+
+    if (rc != 1)
+      return raise_read_err(fp);
+
+    if (sig_footer[i] != expected_sig_head[i]) {
+      fprintf(stderr,
+              "load_whales_bin: malaligned load, signature footer doesn't "
+              "match for %s\n",
+              path);
+      fclose(fp);
+      return -1;
+    }
+  }
+
+  printf("Successfully loaded %d whales from binary, skipped %d\n",
+         (loaded - skip_count), skip_count);
+  fclose(fp);
+  return (loaded - skip_count);
 }
 
 int load_whales(const char *path, struct whale *whales, int limit) {
@@ -177,4 +301,7 @@ int main(void) {
          heaviest->length, heaviest->mass);
 
   save_binary("whales.bin", whales, loaded);
+
+  struct whale_bin whales_bin[100];
+  load_whales_bin("whales.bin", whales_bin, 100);
 }
