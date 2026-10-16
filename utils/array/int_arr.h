@@ -7,11 +7,7 @@
 //
 // ---- int_arr ----
 //
-typedef struct {
-  size_t length;
-  size_t capacity;
-  int *data;
-} int_arr; // non-opaque struct
+typedef struct int_arr int_arr; // opaque struct
 
 //
 // ---- life time functions ----
