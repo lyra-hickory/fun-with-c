@@ -28,6 +28,7 @@ void int_arr_destroy(int_arr *arr);
 bool int_arr_append(int_arr *arr, int val);
 
 // inserts at the position, moving the tail out
+// can insert at the tail
 bool int_arr_insert(int_arr *arr, size_t pos, int val);
 
 // replaces the value at the position

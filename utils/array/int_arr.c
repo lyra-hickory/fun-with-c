@@ -130,7 +130,7 @@ bool int_arr_insert(int_arr *arr, size_t pos, int val) {
   }
 
   // trying to insert it out of assigned slots is a failure
-  if (pos >= arr->length) {
+  if (pos > arr->length) {
     return false;
   }
 
