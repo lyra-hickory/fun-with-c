@@ -9,7 +9,7 @@
 // ---- life cycle ----
 //
 
-bool int_arr_test_create() {
+bool int_arr_test_create(void) {
   // Assemble
   int_arr *arr = int_arr_create();
 
@@ -25,7 +25,7 @@ bool int_arr_test_create() {
   return true;
 }
 
-bool int_arr_test_destroy() {
+bool int_arr_test_destroy(void) {
   int_arr *arr = int_arr_create();
 
   assert(arr != NULL);
@@ -40,7 +40,7 @@ bool int_arr_test_destroy() {
 // ---- append ----
 //
 
-bool int_arr_test_append_one_value() {
+bool int_arr_test_append_one_value(void) {
   // Assemble
   int_arr *arr = int_arr_create();
   if (arr == NULL)
@@ -64,7 +64,7 @@ bool int_arr_test_append_one_value() {
   return true;
 }
 
-bool int_arr_test_append_ten_values() {
+bool int_arr_test_append_ten_values(void) {
   // Assemble
   int_arr *arr = int_arr_create();
   if (arr == NULL)
@@ -91,7 +91,7 @@ bool int_arr_test_append_ten_values() {
   return true;
 }
 
-bool int_arr_test_append_catch_too_large_capacity() {
+bool int_arr_test_append_catch_too_large_capacity(void) {
   // Assemble
   int_arr *arr = int_arr_create();
   if (arr == NULL)
@@ -116,7 +116,7 @@ bool int_arr_test_append_catch_too_large_capacity() {
   return true;
 }
 
-bool int_arr_test_append_catch_zero_capacity() {
+bool int_arr_test_append_catch_zero_capacity(void) {
   // Assemble
   int_arr *arr = int_arr_create();
   if (arr == NULL)
@@ -146,7 +146,7 @@ bool int_arr_test_append_catch_zero_capacity() {
 // ---- insert ----
 //
 
-bool int_arr_test_insert_at_front() {
+bool int_arr_test_insert_at_front(void) {
   // Assemble
   int_arr *arr = int_arr_create();
   if (arr == NULL)
@@ -178,7 +178,7 @@ bool int_arr_test_insert_at_front() {
   return true;
 }
 
-bool int_arr_test_insert_at_tail() {
+bool int_arr_test_insert_at_tail(void) {
   // Assemble
   int_arr *arr = int_arr_create();
   if (arr == NULL)
@@ -210,7 +210,7 @@ bool int_arr_test_insert_at_tail() {
   return true;
 }
 
-bool int_arr_test_insert_from_empty() {
+bool int_arr_test_insert_from_empty(void) {
   // Assemble
   int_arr *arr = int_arr_create();
   if (arr == NULL)
@@ -236,7 +236,7 @@ bool int_arr_test_insert_from_empty() {
   return true;
 }
 
-bool int_arr_test_insert_catch_out_of_bounds() {
+bool int_arr_test_insert_catch_out_of_bounds(void) {
   // Assemble
   int_arr *arr = int_arr_create();
   if (arr == NULL)
