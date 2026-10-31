@@ -196,7 +196,7 @@ void harness_run_tests(void) {
 }
 
 //
-// ---- API ----
+// ---- USER FACING ----
 //
 
 #define TEST(fn) harness_define_test(h, fn)
@@ -210,3 +210,33 @@ void harness_run_tests(void) {
       return (1);                                                              \
     }                                                                          \
   } while (0)
+
+//
+// ---- USAGE ----
+//
+
+//
+// test fn's return 0 as passed and any other code as failure
+//
+// SECTION_DEF for defining the sections, otherwise pass (struct harness_section
+// *h) into the section function
+//
+// SECTION accepts the section functions and registers them along with the tests
+//
+// TEST expects a (struct harness_section *h) passed in
+//
+// Run harness_run_tests in order to actually run the tests
+//
+
+/*
+ * int test_true(void) { ASSERT(1); }
+ *
+ * SECTION_DEF(section_name) {
+ *  TEST(test_true);
+ * }
+ *
+ * int main(void) {
+ *  SECTION(section_name);
+ *  harness_run_tests();
+ * }
+ */
