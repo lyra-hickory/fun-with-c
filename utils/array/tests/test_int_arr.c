@@ -266,6 +266,7 @@ bool int_arr_test_insert_catch_out_of_bounds(void) {
 }
 
 int main(void) {
+
   printf("---- Starting int_arr test suite ----\n\n");
   int total_tests = 0;
   int passed_count = 0;
