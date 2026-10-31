@@ -206,7 +206,7 @@ void harness_run_tests(void) {
 #define ASSERT(c)                                                              \
   do {                                                                         \
     if (!(c)) {                                                                \
-      printf(__FILE__ ":%d: assertion failed: %s\n", __LINE__, #c);            \
+      fprintf(stderr, __FILE__ ":%d: assertion failed: %s\n", __LINE__, #c);   \
       return (1);                                                              \
     }                                                                          \
   } while (0)
