@@ -8,6 +8,7 @@
 //
 //  ---- TYPES & STRUCTS ----
 //
+
 typedef int (*harness_section_test_t)(void);
 
 struct harness_test_item {
@@ -29,7 +30,7 @@ struct harness_section {
   struct harness_test_item *tests_tail;
 };
 
-typedef void (*harness_section_register_t)(struct harness_section *h);
+typedef void (*harness_section_register_t)(struct harness_section *harness_ctx);
 
 //
 // ---- STRUCT CLEANUP ----
@@ -80,19 +81,19 @@ int total_passed = 0;
 int total_failed = 0;
 
 // ---- registers the test item ----
-void harness_define_test_impl(struct harness_section *h,
+void harness_define_test_impl(struct harness_section *harness_ctx,
                               harness_section_test_t test, char *test_name) {
   struct harness_test_item *test_item = malloc(sizeof *test_item);
   if (test_item == NULL) {
     fprintf(stderr, "ERROR: Failed to load test \"%s:%s\" | malloc failure\n",
-            h->name, test_name);
+            harness_ctx->name, test_name);
     return;
   }
 
   test_item->name = malloc(strlen(test_name) + 1);
   if (test_item->name == NULL) {
     fprintf(stderr, "ERROR: Failed to load test \"%s:%s\" | malloc failure\n",
-            h->name, test_name);
+            harness_ctx->name, test_name);
     free(test_item);
     return;
   }
@@ -102,53 +103,54 @@ void harness_define_test_impl(struct harness_section *h,
   test_item->next = NULL;
 
   // add test to section
-  h->total++;
-  h->tests_tail->next = test_item;
-  h->tests_tail = test_item;
+  harness_ctx->total++;
+  harness_ctx->tests_tail->next = test_item;
+  harness_ctx->tests_tail = test_item;
 }
-#define harness_define_test(h, fn) harness_define_test_impl(h, fn, #fn)
+#define harness_define_test(harness_ctx, fn)                                   \
+  harness_define_test_impl(harness_ctx, fn, #fn)
 
 // ---- registers the test section ----
 void harness_define_section_impl(harness_section_register_t register_section_fn,
                                  char *section_name) {
-  struct harness_section *h = malloc(sizeof *h);
-  if (h == NULL) {
+  struct harness_section *harness_ctx = malloc(sizeof *harness_ctx);
+  if (harness_ctx == NULL) {
     fprintf(stderr, "ERROR: Failed to load section \"%s\" | malloc failure\n",
-            h->name);
+            harness_ctx->name);
     return;
   }
 
   // init the struct
-  h->total = 0;
-  h->passed = 0;
-  h->failed = 0;
-  h->tests_head = NULL;
-  h->tests_tail = NULL;
-  h->next = NULL;
+  harness_ctx->total = 0;
+  harness_ctx->passed = 0;
+  harness_ctx->failed = 0;
+  harness_ctx->tests_head = NULL;
+  harness_ctx->tests_tail = NULL;
+  harness_ctx->next = NULL;
 
   // name!
   char *s = malloc(strlen(section_name));
   if (s == NULL) {
     fprintf(stderr, "ERROR: Failed to load section \"%s\" | malloc failure\n",
-            h->name);
-    free(h);
+            harness_ctx->name);
+    free(harness_ctx);
     return;
   }
-  h->name = s;
+  harness_ctx->name = s;
 
   // link 'em up with the tail
   if (sections_tail != NULL) {
-    sections_tail->next = h;
+    sections_tail->next = harness_ctx;
   }
 
   // update the global list
   if (sections_head == NULL) {
-    sections_head = h;
+    sections_head = harness_ctx;
   }
-  sections_tail = h;
+  sections_tail = harness_ctx;
 
-  register_section_fn(h);
-  total_tests += h->total;
+  register_section_fn(harness_ctx);
+  total_tests += harness_ctx->total;
 }
 #define harness_define_section(fn) harness_define_section_impl(fn, #fn)
 
@@ -194,49 +196,3 @@ void harness_run_tests(void) {
 
   harness_section_list_destroy(sections_head);
 }
-
-//
-// ---- USER FACING ----
-//
-
-#define TEST(fn) harness_define_test(h, fn)
-#define SECTION_DEF(fn) void fn(struct harness_section *h)
-#define SECTION(fn) harness_define_section(fn)
-
-#define ASSERT(c)                                                              \
-  do {                                                                         \
-    if (!(c)) {                                                                \
-      fprintf(stderr, __FILE__ ":%d: assertion failed: %s\n", __LINE__, #c);   \
-      return (1);                                                              \
-    }                                                                          \
-  } while (0)
-
-//
-// ---- USAGE ----
-//
-
-//
-// test fn's return 0 as passed and any other code as failure
-//
-// SECTION_DEF for defining the sections, otherwise pass (struct harness_section
-// *h) into the section function
-//
-// SECTION accepts the section functions and registers them along with the tests
-//
-// TEST expects a (struct harness_section *h) passed in
-//
-// Run harness_run_tests in order to actually run the tests
-//
-
-/*
- * int test_true(void) { ASSERT(1); }
- *
- * SECTION_DEF(section_name) {
- *  TEST(test_true);
- * }
- *
- * int main(void) {
- *  SECTION(section_name);
- *  harness_run_tests();
- * }
- */
