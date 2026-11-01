@@ -19,9 +19,12 @@ typedef void (*harness_section_register_t)(struct harness_section *harness_ctx);
 
 void harness_define_test_impl(struct harness_section *harness_ctx,
                               harness_section_test_t test, char *test_name);
+#define harness_define_test(harness_ctx, fn)                                   \
+  harness_define_test_impl(harness_ctx, fn, #fn);
 
 void harness_define_section_impl(harness_section_register_t register_section_fn,
                                  char *section_name);
+#define harness_define_section(fn) harness_define_section_impl(fn, #fn)
 
 //
 // ---- RUNNER ----
@@ -33,7 +36,7 @@ void harness_run_tests(void);
 // ---- USER FACING ----
 //
 
-#define TEST(fn) harness_define_test(h, fn)
+#define TEST(fn) harness_define_test(harness_ctx, fn)
 #define SECTION_DEF(fn) void fn(struct harness_section *harness_ctx)
 #define SECTION(fn) harness_define_section(fn)
 

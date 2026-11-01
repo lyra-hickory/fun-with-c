@@ -97,15 +97,22 @@ void harness_define_test_impl(struct harness_section *harness_ctx,
     free(test_item);
     return;
   }
-
   strcpy(test_item->name, test_name);
+
   test_item->test = test;
   test_item->next = NULL;
 
   // add test to section
-  harness_ctx->total++;
-  harness_ctx->tests_tail->next = test_item;
+  if (harness_ctx->tests_head == NULL) {
+    harness_ctx->tests_head = test_item;
+  }
+
+  if (harness_ctx->tests_tail != NULL) {
+    harness_ctx->tests_tail->next = test_item;
+  }
+
   harness_ctx->tests_tail = test_item;
+  harness_ctx->total++;
 }
 #define harness_define_test(harness_ctx, fn)                                   \
   harness_define_test_impl(harness_ctx, fn, #fn)
@@ -129,14 +136,14 @@ void harness_define_section_impl(harness_section_register_t register_section_fn,
   harness_ctx->next = NULL;
 
   // name!
-  char *s = malloc(strlen(section_name));
-  if (s == NULL) {
+  harness_ctx->name = malloc(strlen(section_name) + 1);
+  if (harness_ctx->name == NULL) {
     fprintf(stderr, "ERROR: Failed to load section \"%s\" | malloc failure\n",
             section_name);
     free(harness_ctx);
     return;
   }
-  harness_ctx->name = s;
+  strcpy(harness_ctx->name, section_name);
 
   // link 'em up with the tail
   if (sections_tail != NULL) {
@@ -159,7 +166,7 @@ void harness_define_section_impl(harness_section_register_t register_section_fn,
 //
 
 void harness_run_tests(void) {
-  printf("---- Running Testing Harness ----\n");
+  printf("---- Running Testing Harness ----\n\n");
 
   struct harness_section *h = sections_head;
 
@@ -175,8 +182,8 @@ void harness_run_tests(void) {
         h->passed++;
       } else {
         h->failed++;
-        printf("TEST FAILED %s:%s, exit code %d\n", h->name, t->name,
-               result_code);
+        fprintf(stderr, "\nTEST FAILED %s | %s, exit code %d\n\n", h->name,
+                t->name, result_code); // TODO: print as red
       }
 
       t = t->next;
@@ -192,7 +199,7 @@ void harness_run_tests(void) {
 
   printf("---- Ran %d tests ----\n", total_tests);
   printf("Total Passed: %d\n", total_passed);
-  printf("Total Failed: %d\n", total_passed);
+  printf("Total Failed: %d\n", total_failed);
 
   harness_section_list_destroy(sections_head);
 }
