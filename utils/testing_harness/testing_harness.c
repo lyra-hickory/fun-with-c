@@ -116,7 +116,7 @@ void harness_define_section_impl(harness_section_register_t register_section_fn,
   struct harness_section *harness_ctx = malloc(sizeof *harness_ctx);
   if (harness_ctx == NULL) {
     fprintf(stderr, "ERROR: Failed to load section \"%s\" | malloc failure\n",
-            harness_ctx->name);
+            section_name);
     return;
   }
 
@@ -132,7 +132,7 @@ void harness_define_section_impl(harness_section_register_t register_section_fn,
   char *s = malloc(strlen(section_name));
   if (s == NULL) {
     fprintf(stderr, "ERROR: Failed to load section \"%s\" | malloc failure\n",
-            harness_ctx->name);
+            section_name);
     free(harness_ctx);
     return;
   }
