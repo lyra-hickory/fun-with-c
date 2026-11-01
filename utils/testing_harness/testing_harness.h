@@ -47,7 +47,6 @@ void harness_run_tests(void);
       return (1);                                                              \
     }                                                                          \
   } while (0)
-#endif
 
 #define RUN_TESTS() harness_run_tests()
 
@@ -81,3 +80,5 @@ void harness_run_tests(void);
  *  RUN_TESTS();
  * }
  */
+
+#endif
