@@ -48,7 +48,7 @@ int int_arr_test_append_one_value(void) {
   // Assemble
   int_arr *arr = int_arr_create();
   if (arr == NULL)
-    return false;
+    return 1;
 
   int val = 10;
 
@@ -56,7 +56,7 @@ int int_arr_test_append_one_value(void) {
   bool res = int_arr_append(arr, val);
 
   if (!res)
-    return false;
+    return 1;
 
   // Assert
   ASSERT(arr->length == 1);
@@ -72,7 +72,7 @@ int int_arr_test_append_ten_values(void) {
   // Assemble
   int_arr *arr = int_arr_create();
   if (arr == NULL)
-    return false;
+    return 1;
 
   int val_list[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
@@ -81,7 +81,7 @@ int int_arr_test_append_ten_values(void) {
     bool res = int_arr_append(arr, val_list[i]);
 
     if (!res)
-      return false;
+      return 1;
   }
 
   // Assert
@@ -99,7 +99,7 @@ int int_arr_test_append_catch_too_large_capacity(void) {
   // Assemble
   int_arr *arr = int_arr_create();
   if (arr == NULL)
-    return false;
+    return 1;
 
   size_t too_big_for_more = SIZE_MAX / 2 + 100; // bigger than we should allow
 
@@ -124,7 +124,7 @@ int int_arr_test_append_catch_zero_capacity(void) {
   // Assemble
   int_arr *arr = int_arr_create();
   if (arr == NULL)
-    return false;
+    return 1;
 
   arr->capacity = 0;
 
@@ -132,7 +132,7 @@ int int_arr_test_append_catch_zero_capacity(void) {
   bool res = int_arr_append(arr, 1);
 
   if (!res)
-    return false;
+    return 1;
 
   // Assert
   ASSERT(arr->capacity ==
@@ -161,13 +161,13 @@ int int_arr_test_insert_at_front(void) {
   // Assemble
   int_arr *arr = int_arr_create();
   if (arr == NULL)
-    return false;
+    return 1;
 
   for (int i = 0; i < 10; i++) {
     bool res = int_arr_append(arr, i);
 
     if (!res)
-      return false;
+      return 1;
   }
 
   int val = 99;
@@ -177,7 +177,7 @@ int int_arr_test_insert_at_front(void) {
   bool res = int_arr_insert(arr, pos, val);
 
   if (!res)
-    return false;
+    return 1;
 
   // Assert
   ASSERT(arr->length == 11);
@@ -193,13 +193,13 @@ int int_arr_test_insert_at_tail(void) {
   // Assemble
   int_arr *arr = int_arr_create();
   if (arr == NULL)
-    return false;
+    return 1;
 
   for (int i = 0; i < 10; i++) {
     bool res = int_arr_append(arr, i);
 
     if (!res)
-      return false;
+      return 1;
   }
 
   int val = 99;
@@ -209,7 +209,7 @@ int int_arr_test_insert_at_tail(void) {
   bool res = int_arr_insert(arr, pos, val);
 
   if (!res)
-    return false;
+    return 1;
 
   // Assert
   ASSERT(arr->length == 11);
@@ -225,14 +225,14 @@ int int_arr_test_insert_from_empty(void) {
   // Assemble
   int_arr *arr = int_arr_create();
   if (arr == NULL)
-    return false;
+    return 1;
 
   // Act
   for (int i = 0; i < 10; i++) {
     bool res = int_arr_insert(arr, i, i);
 
     if (!res)
-      return false;
+      return 1;
   }
 
   // Assert
@@ -251,13 +251,13 @@ int int_arr_test_insert_catch_out_of_bounds(void) {
   // Assemble
   int_arr *arr = int_arr_create();
   if (arr == NULL)
-    return false;
+    return 1;
 
   for (int i = 0; i < 10; i++) {
     bool res = int_arr_append(arr, i);
 
     if (!res)
-      return false;
+      return 1;
   }
 
   int val = 99;
