@@ -19,3 +19,8 @@ int main(void) {
   RUN_TESTS();  // Runs the tests!
 }
 ```
+
+## TODO
+
+- Add coloured output
+- Add CLEANUP to the tests so that it can run at an early failure
