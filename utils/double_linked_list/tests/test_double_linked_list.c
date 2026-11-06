@@ -241,20 +241,20 @@ int dll_list_test_insert_at_index_5(void) {
   // Assemble
   struct dll_list *list = dll_list_create();
   struct dll_type dll_int = {.name = "name", .destroy = free};
-  char *data = "some data";
+  char *char_data = "some data";
 
   for (int i = 0; i < 10; i++) {
-    int *data = malloc(sizeof *data);
-    if (data == NULL) {
+    int *num_data = malloc(sizeof *num_data);
+    if (num_data == NULL) {
       dll_list_destroy(list);
       return 2; // exit code 2 for other failure
     }
-    *data = i;
-    dll_list_add_tail(list, data, &dll_int);
+    *num_data = i;
+    dll_list_add_tail(list, num_data, &dll_int);
   }
 
   // Act
-  struct dll_node *node = dll_list_insert_at(list, data, NULL, 5);
+  struct dll_node *node = dll_list_insert_at(list, char_data, NULL, 5);
 
   // Assert
   ASSERT(node != NULL);

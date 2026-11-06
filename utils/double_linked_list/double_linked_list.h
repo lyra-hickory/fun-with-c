@@ -7,13 +7,28 @@
 // ---- STRUCTS ----
 //
 
+typedef void (*destructor_fn)(void *data);
+
 // dll_type is owned by the implementation, never by dll
 // dll_type->destroy = NULL; is a noop for destruction of data
-struct dll_type;
+struct dll_type {
+  char *name;
+  destructor_fn destroy;
+};
 
-struct dll_node;
+struct dll_node {
+  struct dll_node *next;
+  struct dll_node *prev;
 
-struct dll_list;
+  void *data;
+  struct dll_type *type;
+};
+
+struct dll_list {
+  struct dll_node *head;
+  struct dll_node *tail;
+  size_t length;
+};
 
 //
 // ---- LIFETIME ----

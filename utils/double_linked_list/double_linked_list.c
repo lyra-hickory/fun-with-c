@@ -1,33 +1,9 @@
 #include "double_linked_list.h"
+#include <assert.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-//
-// ---- STRUCTS ----
-//
-
-typedef void (*desctructor_fn)(void *data);
-
-struct dll_type {
-  char *name;
-  desctructor_fn destroy;
-};
-
-struct dll_node {
-  struct dll_node *next;
-  struct dll_node *prev;
-
-  void *data;
-  struct dll_type *type;
-};
-
-struct dll_list {
-  struct dll_node *head;
-  struct dll_node *tail;
-  size_t length;
-};
 
 //
 // ---- LIFETIME ----
@@ -37,7 +13,7 @@ struct dll_list *dll_list_create(void) {
   struct dll_list *list = malloc(sizeof *list);
 
   if (list == NULL) {
-    fprintf(stderr, "ERROR: dll_list failed to init, malloc error");
+    fprintf(stderr, "ERROR: dll_list failed to init, malloc error\n");
     return NULL;
   }
 
@@ -48,17 +24,25 @@ struct dll_list *dll_list_create(void) {
   return list;
 }
 
+void dll_list_destroy_node(struct dll_node *node) {
+  if (node->type != NULL && node->type->destroy != NULL) {
+    node->type->destroy(node->data);
+  }
+
+  free(node);
+}
+
 void dll_list_destroy(struct dll_list *list) {
+  if (list == NULL) {
+    return;
+  }
+
   struct dll_node *node = list->head;
   struct dll_node *next = NULL;
 
   while (node != NULL) {
-    if (node->type != NULL && node->type->destroy != NULL) {
-      node->type->destroy(node->data);
-    }
-
     next = node->next;
-    free(node);
+    dll_list_destroy_node(node);
     node = next;
   }
 
@@ -69,7 +53,7 @@ void dll_list_destroy(struct dll_list *list) {
 // ---- NODE ADD ----
 //
 
-struct dll_node *dll_node_create(void *data, struct dll_type *type) {
+static struct dll_node *dll_node_create(void *data, struct dll_type *type) {
   struct dll_node *node = malloc(sizeof *node);
 
   if (node == NULL) {
@@ -137,54 +121,29 @@ struct dll_node *dll_list_insert_at(struct dll_list *list, void *data, struct dl
     return NULL;
   }
 
+  // insert at head
+  if (index == 0) {
+    return dll_list_add_head(list, data, type);
+  }
+  // insert at tail
+  if (index == list->length) {
+    return dll_list_add_tail(list, data, type);
+  }
+
   struct dll_node *node = dll_node_create(data, type);
 
   if (node == NULL) {
     return NULL;
   }
 
-  // insert at head / tail
-  if (index == 0) {
-    if (list->head != NULL) {
-      list->head->prev = node;
-      node->next = list->head;
-    }
-    if (list->tail == NULL) {
-      list->tail = node;
-    }
-
-    list->head = node;
-    list->length++;
-
-    return node;
-  }
-
-  if (index == list->length) {
-    if (list->tail != NULL) {
-      list->tail->next = node;
-      node->prev = list->tail;
-    }
-    // realistically this line shouldn't ever be hit
-    if (list->head == NULL) {
-      list->head = node;
-    }
-
-    list->tail = node;
-    list->length++;
-
-    return node;
-  }
-
   // find the prev and next nodes
-  // TODO/optimisation: We could walk backwards if index > length/2
   struct dll_node *prev_node = list->head;
   for (size_t i = 1; i < index; i++) {
-    if (prev_node->next == NULL) {
-      fprintf(stderr, "ERROR: dll_list_insert_at broken chain at index %zu\n", i);
-      return NULL;
-    }
+    assert(prev_node->next != NULL); // loud failure during debug
     prev_node = prev_node->next;
   }
+  assert(prev_node->next != NULL); // loud failure during debug
+
   struct dll_node *next_node = prev_node->next;
 
   // insert our node between prev and next
