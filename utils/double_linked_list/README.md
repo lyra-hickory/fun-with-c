@@ -19,3 +19,7 @@ The design I settled on is this:
 - The list gets a wrapper instead of handling just raw nodes, which is what the functions rely on
     - tracks `head` and `tail` for easy access
     - `length` included for N(1) length lookup
+
+## Fail loud or fail silently?
+
+I have been thinking about this and not entirely sure how I want to set up the contract.

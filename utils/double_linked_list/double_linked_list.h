@@ -51,4 +51,11 @@ struct dll_node *dll_list_add_tail(struct dll_list *list, void *data, struct dll
 struct dll_node *dll_list_insert_at(struct dll_list *list, void *data, struct dll_type *type,
                                     size_t index);
 
+//
+// ---- NODE GET ----
+//
+
+struct dll_node *dll_list_get_at(struct dll_list *list, size_t index);
+
+// ---- END ----
 #endif

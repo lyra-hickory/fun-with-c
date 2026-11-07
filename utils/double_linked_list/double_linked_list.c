@@ -157,3 +157,39 @@ struct dll_node *dll_list_insert_at(struct dll_list *list, void *data, struct dl
 
   return node;
 }
+
+//
+// ---- NODE GET ----
+//
+
+struct dll_node *dll_list_get_at(struct dll_list *list, size_t index) {
+  if (list == NULL) {
+    return NULL;
+  }
+
+  if (index >= list->length) {
+    return NULL;
+  }
+
+  struct dll_node *node;
+  if (index > list->length / 2) {
+    size_t steps_back = list->length - (index + 1);
+    node = list->tail;
+    for (size_t i = 0; i < steps_back; i++) {
+      if (node->prev == NULL) {
+        return NULL;
+      }
+      node = node->prev;
+    }
+  } else {
+    node = list->head;
+    for (size_t i = 0; i < index; i++) {
+      if (node->next == NULL) {
+        return NULL;
+      }
+      node = node->next;
+    }
+  }
+
+  return node;
+}

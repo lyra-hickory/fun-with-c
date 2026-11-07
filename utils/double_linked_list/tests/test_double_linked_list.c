@@ -3,6 +3,31 @@
 #include <stdlib.h>
 
 //
+// ---- HELPERS ----
+//
+
+struct dll_type dll_test_int = {.name = "name", .destroy = free};
+
+size_t dll_list_test_seed_nodes(struct dll_list *list, size_t n) {
+  for (size_t i = 0; i < n; i++) {
+    int *num_data = malloc(sizeof *num_data);
+    if (num_data == NULL) {
+      return i;
+    }
+
+    struct dll_node *node = dll_list_add_tail(list, num_data, &dll_test_int);
+
+    if (node == NULL) {
+      free(num_data);
+      return i;
+    }
+
+    *(int *)node->data = i;
+  }
+  return n;
+}
+
+//
 // ---- LIFETIME ----
 //
 int dll_list_test_create_destroy(void) {
@@ -240,17 +265,12 @@ int dll_list_test_insert_at_the_middle(void) {
 int dll_list_test_insert_at_index_5(void) {
   // Assemble
   struct dll_list *list = dll_list_create();
-  struct dll_type dll_int = {.name = "name", .destroy = free};
   char *char_data = "some data";
 
-  for (int i = 0; i < 10; i++) {
-    int *num_data = malloc(sizeof *num_data);
-    if (num_data == NULL) {
-      dll_list_destroy(list);
-      return 2; // exit code 2 for other failure
-    }
-    *num_data = i;
-    dll_list_add_tail(list, num_data, &dll_int);
+  size_t r = dll_list_test_seed_nodes(list, 10);
+  if (r != 10) {
+    dll_list_destroy(list);
+    return 2; // returning 2 for other error
   }
 
   // Act
@@ -263,10 +283,7 @@ int dll_list_test_insert_at_index_5(void) {
   ASSERT(*(int *)list->tail->data == 9);
   ASSERT(list->length == 11);
 
-  struct dll_node *expected_node = list->head;
-  for (int i = 0; i < 5; i++) {
-    expected_node = expected_node->next;
-  }
+  struct dll_node *expected_node = dll_list_get_at(list, 5);
   ASSERT(expected_node == node);
   // when inserting between nodes, the neigbours are k-1 and k
   ASSERT(*(int *)node->prev->data == 4); // k-1
@@ -317,11 +334,55 @@ SECTION_DEF(DLL_TEST_ADD) {
 }
 
 //
+// ---- NODE GET ----
+//
+
+int dll_list_test_get_index_5(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  dll_list_test_seed_nodes(list, 20);
+
+  // Act
+  struct dll_node *node = dll_list_get_at(list, 5);
+
+  // Assert
+  ASSERT(node != NULL);
+  ASSERT(*(int *)node->data == 5);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+int dll_list_test_get_index_15(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  dll_list_test_seed_nodes(list, 20);
+
+  // Act
+  struct dll_node *node = dll_list_get_at(list, 15);
+
+  // Assert
+  ASSERT(node != NULL);
+  ASSERT(*(int *)node->data == 15);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+SECTION_DEF(DLL_TEST_NODE_GET) {
+  TEST(dll_list_test_get_index_5);
+  TEST(dll_list_test_get_index_15);
+}
+
+//
 // ---- MAIN ----
 //
 int main(void) {
   SECTION(DLL_TEST_LIFETIME);
   SECTION(DLL_TEST_ADD);
+  SECTION(DLL_TEST_NODE_GET);
 
   RUN_TESTS();
 }
