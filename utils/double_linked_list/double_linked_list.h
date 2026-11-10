@@ -1,6 +1,7 @@
 #ifndef DOUBLE_LINKED_LIST_H
 #define DOUBLE_LINKED_LIST_H
 
+#include <stdbool.h>
 #include <stddef.h>
 
 //
@@ -8,6 +9,8 @@
 //
 
 typedef void (*destructor_fn)(void *data);
+
+typedef bool (*dll_test_fn)(void *data, void *ctx);
 
 // dll_type is owned by the implementation, never by dll
 // dll_type->destroy = NULL; is a noop for destruction of data
@@ -67,6 +70,25 @@ size_t dll_list_pop_at(struct dll_list *list, size_t index, void **out);
 
 // Complete cleanup, node is destroyed and so is the data
 size_t dll_list_remove_at(struct dll_list *list, size_t index);
+
+// Remove by a match_fn acting on the data
+// true   :   node gets destroy
+// false  :   node gets skipped
+//
+// Note that the test_fn acts on node->data
+size_t dll_list_remove_by(struct dll_list *list, dll_test_fn test_fn, void *ctx);
+
+// Split by a match_fn acting on the data, returning a new list with the matched nodes
+// true   :   node gets popped
+// false  :   node gets skipped
+//
+// Note that the test_fn acts on node->data
+//
+// Note that the returned list is a compilation of the matched nodes,
+// not new nodes with the same data
+//
+// Note that NULL means a failure occured
+struct dll_list *dll_list_split_by(struct dll_list *list, dll_test_fn test_fn, void *ctx);
 
 // ---- END ----
 #endif

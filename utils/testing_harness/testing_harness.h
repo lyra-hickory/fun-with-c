@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #ifndef TESTING_HARNESS
 #define TESTING_HARNESS
 
@@ -17,10 +19,9 @@ typedef void (*harness_section_register_t)(struct harness_section *harness_ctx);
 // ---- REGISTERS ----
 //
 
-void harness_define_test_impl(struct harness_section *harness_ctx,
-                              harness_section_test_t test, char *test_name);
-#define harness_define_test(harness_ctx, fn)                                   \
-  harness_define_test_impl(harness_ctx, fn, #fn);
+void harness_define_test_impl(struct harness_section *harness_ctx, harness_section_test_t test,
+                              char *test_name);
+#define harness_define_test(harness_ctx, fn) harness_define_test_impl(harness_ctx, fn, #fn);
 
 void harness_define_section_impl(harness_section_register_t register_section_fn,
                                  char *section_name);
@@ -40,12 +41,12 @@ void harness_run_tests(void);
 #define SECTION_DEF(fn) void fn(struct harness_section *harness_ctx)
 #define SECTION(fn) harness_define_section(fn)
 
-#define ASSERT(c)                                                              \
-  do {                                                                         \
-    if (!(c)) {                                                                \
-      fprintf(stderr, __FILE__ ":%d: assertion failed: %s\n", __LINE__, #c);   \
-      return (1);                                                              \
-    }                                                                          \
+#define ASSERT(c)                                                                                  \
+  do {                                                                                             \
+    if (!(c)) {                                                                                    \
+      fprintf(stderr, __FILE__ ":%d: assertion failed: %s\n", __LINE__, #c);                       \
+      return (1);                                                                                  \
+    }                                                                                              \
   } while (0)
 
 #define RUN_TESTS() harness_run_tests()
