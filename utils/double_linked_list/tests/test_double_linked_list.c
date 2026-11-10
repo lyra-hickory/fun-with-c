@@ -371,9 +371,305 @@ int dll_list_test_get_index_15(void) {
   return 0;
 }
 
+int dll_list_test_get_at_invalid_index(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+
+  // Act
+  struct dll_node *node = dll_list_get_at(list, 0);
+
+  // Assert
+  ASSERT(node == NULL);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
 SECTION_DEF(DLL_TEST_NODE_GET) {
   TEST(dll_list_test_get_index_5);
   TEST(dll_list_test_get_index_15);
+  TEST(dll_list_test_get_at_invalid_index);
+}
+
+//
+// ---- NODE REMOVAL ----
+//
+
+// pop
+
+int dll_list_test_pop_at_5(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  dll_list_test_seed_nodes(list, 20);
+  struct dll_node *node = dll_list_get_at(list, 5);
+
+  if (node == NULL || node->next == NULL || node->prev == NULL) {
+    dll_list_destroy(list);
+    return 2;
+  }
+
+  struct dll_node *prev = node->prev;
+  struct dll_node *next = node->next;
+
+  // Act
+  void *data = NULL;
+  size_t r = dll_list_pop_at(list, 5, &data);
+
+  // Assert
+  ASSERT(r == 1);
+  ASSERT(*(int *)data == 5);
+
+  ASSERT(prev->next == next);
+  ASSERT(next->prev == prev);
+  ASSERT(list->length == 19);
+
+  // Destroy
+  dll_list_destroy(list);
+  free(data);
+  return 0;
+}
+
+int dll_list_test_pop_at_tail(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  dll_list_test_seed_nodes(list, 3);
+  struct dll_node *node = dll_list_get_at(list, 2);
+
+  if (node == NULL) {
+    dll_list_destroy(list);
+    return 2;
+  }
+
+  struct dll_node *prev = node->prev;
+
+  // Act
+  void *data = NULL;
+  size_t r = dll_list_pop_at(list, 2, &data);
+
+  // Assert
+  ASSERT(r == 1);
+  ASSERT(*(int *)data == 2);
+
+  ASSERT(list->tail == prev);
+  ASSERT(list->length == 2);
+
+  // Destroy
+  dll_list_destroy(list);
+  free(data);
+  return 0;
+}
+
+int dll_list_test_pop_at_head(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  dll_list_test_seed_nodes(list, 3);
+  struct dll_node *node = dll_list_get_at(list, 0);
+
+  if (node == NULL) {
+    dll_list_destroy(list);
+    return 2;
+  }
+
+  struct dll_node *next = node->next;
+
+  // Act
+  void *data = NULL;
+  size_t r = dll_list_pop_at(list, 0, &data);
+
+  // Assert
+  ASSERT(r == 1);
+  ASSERT(*(int *)data == 0);
+
+  ASSERT(list->head == next);
+  ASSERT(list->length == 2);
+
+  // Destroy
+  dll_list_destroy(list);
+  free(data);
+  return 0;
+}
+
+int dll_list_test_pop_only_node(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  dll_list_test_seed_nodes(list, 1);
+
+  // Act
+  void *data = NULL;
+  size_t r = dll_list_pop_at(list, 0, &data);
+
+  // Assert
+  ASSERT(r == 1);
+  ASSERT(*(int *)data == 0);
+
+  ASSERT(list->head == NULL);
+  ASSERT(list->tail == NULL);
+  ASSERT(list->length == 0);
+
+  // Destroy
+  dll_list_destroy(list);
+  free(data);
+  return 0;
+}
+
+int dll_list_test_pop_at_invalid(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  dll_list_test_seed_nodes(list, 3);
+
+  // Act
+  void *data = NULL;
+  size_t r = dll_list_pop_at(list, 5, &data);
+
+  // Assert
+  ASSERT(r == 0);
+  ASSERT(data == NULL);
+
+  ASSERT(list->length == 3);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+// remove
+
+int dll_list_test_remove_at_5(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  dll_list_test_seed_nodes(list, 20);
+  struct dll_node *node = dll_list_get_at(list, 5);
+
+  if (node == NULL || node->next == NULL || node->prev == NULL) {
+    dll_list_destroy(list);
+    return 2;
+  }
+
+  struct dll_node *prev = node->prev;
+  struct dll_node *next = node->next;
+
+  // Act
+  size_t r = dll_list_remove_at(list, 5);
+
+  // Assert
+  ASSERT(r == 1);
+
+  ASSERT(prev->next == next);
+  ASSERT(next->prev == prev);
+  ASSERT(list->length == 19);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+int dll_list_test_remove_at_tail(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  dll_list_test_seed_nodes(list, 3);
+  struct dll_node *node = dll_list_get_at(list, 2);
+
+  if (node == NULL) {
+    dll_list_destroy(list);
+    return 2;
+  }
+
+  struct dll_node *prev = node->prev;
+
+  // Act
+  size_t r = dll_list_remove_at(list, 2);
+
+  // Assert
+  ASSERT(r == 1);
+
+  ASSERT(list->tail == prev);
+  ASSERT(list->length == 2);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+int dll_list_test_remove_at_head(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  dll_list_test_seed_nodes(list, 3);
+  struct dll_node *node = dll_list_get_at(list, 0);
+
+  if (node == NULL) {
+    dll_list_destroy(list);
+    return 2;
+  }
+
+  struct dll_node *next = node->next;
+
+  // Act
+  size_t r = dll_list_remove_at(list, 0);
+
+  // Assert
+  ASSERT(r == 1);
+
+  ASSERT(list->head == next);
+  ASSERT(list->length == 2);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+int dll_list_test_remove_only_node(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  dll_list_test_seed_nodes(list, 1);
+
+  // Act
+  size_t r = dll_list_remove_at(list, 0);
+
+  // Assert
+  ASSERT(r == 1);
+
+  ASSERT(list->head == NULL);
+  ASSERT(list->tail == NULL);
+  ASSERT(list->length == 0);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+int dll_list_test_remove_at_invalid(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  dll_list_test_seed_nodes(list, 3);
+
+  // Act
+  size_t r = dll_list_remove_at(list, 5);
+
+  // Assert
+  ASSERT(r == 0);
+
+  ASSERT(list->length == 3);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+SECTION_DEF(DLL_TEST_NODE_REMOVAL) {
+  // pop
+  TEST(dll_list_test_pop_at_5);
+  TEST(dll_list_test_pop_at_tail);
+  TEST(dll_list_test_pop_at_head);
+  TEST(dll_list_test_pop_only_node);
+  TEST(dll_list_test_pop_at_invalid);
+
+  // remove
+  TEST(dll_list_test_remove_at_5);
+  TEST(dll_list_test_remove_at_tail);
+  TEST(dll_list_test_remove_at_head);
+  TEST(dll_list_test_remove_only_node);
+  TEST(dll_list_test_remove_at_invalid);
 }
 
 //
@@ -383,6 +679,7 @@ int main(void) {
   SECTION(DLL_TEST_LIFETIME);
   SECTION(DLL_TEST_ADD);
   SECTION(DLL_TEST_NODE_GET);
+  SECTION(DLL_TEST_NODE_REMOVAL);
 
   RUN_TESTS();
 }

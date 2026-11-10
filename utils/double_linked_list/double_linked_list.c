@@ -24,7 +24,7 @@ struct dll_list *dll_list_create(void) {
   return list;
 }
 
-void dll_list_destroy_node(struct dll_node *node) {
+static void dll_list_destroy_node(struct dll_node *node) {
   if (node->type != NULL && node->type->destroy != NULL) {
     node->type->destroy(node->data);
   }
@@ -71,6 +71,10 @@ static struct dll_node *dll_node_create(void *data, struct dll_type *type) {
 
 // -- add head --
 struct dll_node *dll_list_add_head(struct dll_list *list, void *data, struct dll_type *type) {
+  if (list == NULL) {
+    return NULL;
+  }
+
   struct dll_node *node = dll_node_create(data, type);
 
   if (node == NULL) {
@@ -93,6 +97,10 @@ struct dll_node *dll_list_add_head(struct dll_list *list, void *data, struct dll
 
 // -- add tail --
 struct dll_node *dll_list_add_tail(struct dll_list *list, void *data, struct dll_type *type) {
+  if (list == NULL) {
+    return NULL;
+  }
+
   struct dll_node *node = dll_node_create(data, type);
 
   if (node == NULL) {
@@ -116,6 +124,10 @@ struct dll_node *dll_list_add_tail(struct dll_list *list, void *data, struct dll
 // -- insert at --
 struct dll_node *dll_list_insert_at(struct dll_list *list, void *data, struct dll_type *type,
                                     size_t index) {
+  if (list == NULL) {
+    return NULL;
+  }
+
   if (index > list->length) {
     fprintf(stderr, "ERROR: dll_list_insert_at index %zu out of bounds\n", index);
     return NULL;
@@ -163,11 +175,7 @@ struct dll_node *dll_list_insert_at(struct dll_list *list, void *data, struct dl
 //
 
 struct dll_node *dll_list_get_at(struct dll_list *list, size_t index) {
-  if (list == NULL) {
-    return NULL;
-  }
-
-  if (index >= list->length) {
+  if (list == NULL || index >= list->length) {
     return NULL;
   }
 
@@ -192,4 +200,72 @@ struct dll_node *dll_list_get_at(struct dll_list *list, size_t index) {
   }
 
   return node;
+}
+
+//
+// ---- NODE REMOVAL ----
+//
+
+static void unlink_node(struct dll_list *list, struct dll_node *node) {
+  struct dll_node *prev = node->prev;
+  struct dll_node *next = node->next;
+
+  // neighbouring links
+  if (prev != NULL) {
+    prev->next = next;
+  }
+  if (next != NULL) {
+    next->prev = prev;
+  }
+
+  // list index
+  if (list->head == node) {
+    list->head = next;
+  }
+  if (list->tail == node) {
+    list->tail = prev;
+  }
+
+  list->length--;
+}
+
+size_t dll_list_pop_at(struct dll_list *list, size_t index, void **out) {
+  if (list == NULL || index >= list->length) {
+    return 0;
+  }
+
+  struct dll_node *node = dll_list_get_at(list, index);
+
+  if (node == NULL) {
+    return 0;
+  }
+
+  unlink_node(list, node);
+
+  // out the data and destroy the node
+  if (out != NULL) {
+    *out = node->data;
+  }
+
+  free(node);
+
+  return 1;
+}
+
+size_t dll_list_remove_at(struct dll_list *list, size_t index) {
+  if (list == NULL || index >= list->length) {
+    return 0;
+  }
+
+  struct dll_node *node = dll_list_get_at(list, index);
+
+  if (node == NULL) {
+    return 0;
+  }
+
+  unlink_node(list, node);
+
+  dll_list_destroy_node(node);
+
+  return 1;
 }

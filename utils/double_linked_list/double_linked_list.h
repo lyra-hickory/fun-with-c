@@ -57,5 +57,16 @@ struct dll_node *dll_list_insert_at(struct dll_list *list, void *data, struct dl
 
 struct dll_node *dll_list_get_at(struct dll_list *list, size_t index);
 
+//
+// ---- NODE REMOVAL ----
+//
+
+// **out for returning the data, ownership of data is on the user
+// node gets destroyed
+size_t dll_list_pop_at(struct dll_list *list, size_t index, void **out);
+
+// Complete cleanup, node is destroyed and so is the data
+size_t dll_list_remove_at(struct dll_list *list, size_t index);
+
 // ---- END ----
 #endif
