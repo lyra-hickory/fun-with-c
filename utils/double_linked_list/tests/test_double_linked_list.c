@@ -1,0 +1,910 @@
+#include "../../testing_harness/testing_harness.h"
+#include "../double_linked_list.h"
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+
+//
+// ---- HELPERS ----
+//
+
+struct dll_type dll_test_int = {.name = "name", .destroy = free};
+
+size_t dll_list_test_seed_nodes(struct dll_list *list, size_t n) {
+  for (size_t i = 0; i < n; i++) {
+    int *num_data = malloc(sizeof *num_data);
+    if (num_data == NULL) {
+      return i;
+    }
+
+    struct dll_node *node = dll_list_add_tail(list, num_data, &dll_test_int);
+
+    if (node == NULL) {
+      free(num_data);
+      return i;
+    }
+
+    *(int *)node->data = i;
+  }
+  return n;
+}
+
+bool test_even(void *data, void *ctx) {
+  if (data == NULL) {
+    return false;
+  }
+
+  if (ctx != NULL) {
+    return *(bool *)ctx;
+  }
+
+  if (*(int *)data % 2 == 0) {
+    return true;
+  }
+
+  return false;
+}
+
+//
+// ---- LIFETIME ----
+//
+int dll_list_test_create_destroy(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+
+  // Assert
+  ASSERT(list != NULL);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+void test_type_destroy(void *data) { free(data); }
+
+int dll_list_test_type_destroy(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+
+  struct dll_type type = {.name = "destroy", .destroy = test_type_destroy};
+
+  char *data = strdup("some data!");
+  dll_list_add_tail(list, data, &type);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0; // expected to raise an issue if left over data stays
+}
+
+SECTION_DEF(DLL_TEST_LIFETIME) {
+  TEST(dll_list_test_create_destroy);
+  TEST(dll_list_test_type_destroy);
+}
+
+//
+// ---- NODE ADD ----
+//
+
+// -- add head --
+
+int dll_list_test_add_head_one(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  char *data = "some data";
+
+  // Act
+  struct dll_node *node = dll_list_add_head(list, data, NULL);
+
+  // Assert
+  ASSERT(node != NULL);
+
+  ASSERT(list->head == node);
+  ASSERT(list->tail == node);
+  ASSERT(list->length == 1);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+int dll_list_test_add_head_two(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  char *data = "some data";
+
+  // Act
+  struct dll_node *node_1 = dll_list_add_head(list, data, NULL);
+  struct dll_node *node_2 = dll_list_add_head(list, data, NULL);
+
+  // Assert
+  ASSERT(node_1 != NULL);
+  ASSERT(node_2 != NULL);
+
+  ASSERT(list->head == node_2);
+  ASSERT(list->tail == node_1);
+
+  ASSERT(node_1->prev == node_2);
+  ASSERT(node_2->next == node_1);
+  ASSERT(list->length == 2);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+// -- add tail --
+
+int dll_list_test_add_tail_one(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  char *data = "test data!";
+
+  // Act
+  struct dll_node *node = dll_list_add_tail(list, data, NULL);
+
+  // Assert
+  ASSERT(node != NULL);
+  ASSERT(node->data == data);
+
+  ASSERT(list->head == node);
+  ASSERT(list->tail == node);
+  ASSERT(list->length == 1);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+int dll_list_test_add_tail_two(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  char *data_1 = "test data!";
+  char *data_2 = "more data!";
+
+  // Act
+  struct dll_node *node_1 = dll_list_add_tail(list, data_1, NULL);
+  struct dll_node *node_2 = dll_list_add_tail(list, data_2, NULL);
+
+  // Assert
+  ASSERT(node_1 != NULL);
+  ASSERT(node_2 != NULL);
+
+  ASSERT(list->head == node_1);
+  ASSERT(list->tail == node_2);
+  ASSERT(list->length == 2);
+
+  ASSERT(node_1->next == node_2);
+  ASSERT(node_1->prev == NULL);
+
+  ASSERT(node_2->next == NULL);
+  ASSERT(node_2->prev == node_1);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+int dll_list_test_add_one_with_type(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  char *data = "some data";
+  struct dll_type type = {.name = "string", .destroy = NULL};
+
+  // Act
+  struct dll_node *node = dll_list_add_tail(list, data, &type);
+
+  // Assert
+  ASSERT(node != NULL);
+  ASSERT(node->type == &type);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+// -- insert at --
+
+int dll_list_test_insert_at_head(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  char *data = "some data";
+  struct dll_node *tail = dll_list_add_tail(list, data, NULL);
+
+  // Act
+  struct dll_node *node = dll_list_insert_at(list, data, NULL, 0);
+
+  // Assert
+  ASSERT(node != NULL);
+
+  ASSERT(list->head == node);
+  ASSERT(list->tail == tail);
+  ASSERT(list->length == 2);
+
+  ASSERT(node->next == tail);
+  ASSERT(tail->prev == node);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+int dll_list_test_insert_at_tail(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  char *data = "some data";
+  struct dll_node *head = dll_list_add_head(list, data, NULL);
+
+  // Act
+  struct dll_node *node = dll_list_insert_at(list, data, NULL, 1);
+
+  // Assert
+  ASSERT(node != NULL);
+
+  ASSERT(list->head == head);
+  ASSERT(list->tail == node);
+  ASSERT(list->length == 2);
+
+  ASSERT(head->next == node);
+  ASSERT(node->prev == head);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+int dll_list_test_insert_at_the_middle(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  char *data = "some data";
+  struct dll_node *head = dll_list_add_head(list, data, NULL);
+  struct dll_node *tail = dll_list_add_tail(list, data, NULL);
+
+  // Act
+  struct dll_node *node = dll_list_insert_at(list, data, NULL, 1);
+
+  // Assert
+  ASSERT(node != NULL);
+
+  ASSERT(list->head == head);
+  ASSERT(list->tail == tail);
+  ASSERT(list->length == 3);
+
+  ASSERT(head->next == node);
+  ASSERT(node->prev == head);
+
+  ASSERT(tail->prev == node);
+  ASSERT(node->next == tail);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+int dll_list_test_insert_at_index_5(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  char *char_data = "some data";
+
+  size_t r = dll_list_test_seed_nodes(list, 10);
+  if (r != 10) {
+    dll_list_destroy(list);
+    return 2; // returning 2 for other error
+  }
+
+  // Act
+  struct dll_node *node = dll_list_insert_at(list, char_data, NULL, 5);
+
+  // Assert
+  ASSERT(node != NULL);
+
+  ASSERT(*(int *)list->head->data == 0);
+  ASSERT(*(int *)list->tail->data == 9);
+  ASSERT(list->length == 11);
+
+  struct dll_node *expected_node = dll_list_get_at(list, 5);
+  ASSERT(expected_node == node);
+  // when inserting between nodes, the neigbours are k-1 and k
+  ASSERT(*(int *)node->prev->data == 4); // k-1
+  ASSERT(*(int *)node->next->data == 5); // k
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+int dll_list_test_insert_at_out_of_bounds(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  char *data = "some data";
+
+  // Act
+  // TODO: reduce noise here, expected to get a stderr output
+  struct dll_node *node = dll_list_insert_at(list, data, NULL, 5);
+
+  // Assert
+  ASSERT(node == NULL);
+
+  ASSERT(list->head == NULL);
+  ASSERT(list->tail == NULL);
+  ASSERT(list->length == 0);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+SECTION_DEF(DLL_TEST_ADD) {
+  // add_head
+  TEST(dll_list_test_add_head_one);
+  TEST(dll_list_test_add_head_two);
+
+  // add_tail
+  TEST(dll_list_test_add_tail_one);
+  TEST(dll_list_test_add_tail_two);
+  TEST(dll_list_test_add_one_with_type);
+
+  // insert_at
+  TEST(dll_list_test_insert_at_head);
+  TEST(dll_list_test_insert_at_tail);
+  TEST(dll_list_test_insert_at_the_middle);
+  TEST(dll_list_test_insert_at_index_5);
+  TEST(dll_list_test_insert_at_out_of_bounds);
+}
+
+//
+// ---- NODE GET ----
+//
+
+int dll_list_test_get_index_5(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  dll_list_test_seed_nodes(list, 20);
+
+  // Act
+  struct dll_node *node = dll_list_get_at(list, 5);
+
+  // Assert
+  ASSERT(node != NULL);
+  ASSERT(*(int *)node->data == 5);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+int dll_list_test_get_index_15(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  dll_list_test_seed_nodes(list, 20);
+
+  // Act
+  struct dll_node *node = dll_list_get_at(list, 15);
+
+  // Assert
+  ASSERT(node != NULL);
+  ASSERT(*(int *)node->data == 15);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+int dll_list_test_get_at_invalid_index(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+
+  // Act
+  struct dll_node *node = dll_list_get_at(list, 0);
+
+  // Assert
+  ASSERT(node == NULL);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+SECTION_DEF(DLL_TEST_NODE_GET) {
+  TEST(dll_list_test_get_index_5);
+  TEST(dll_list_test_get_index_15);
+  TEST(dll_list_test_get_at_invalid_index);
+}
+
+//
+// ---- NODE REMOVAL ----
+//
+
+// pop
+
+int dll_list_test_pop_at_5(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  dll_list_test_seed_nodes(list, 20);
+  struct dll_node *node = dll_list_get_at(list, 5);
+
+  if (node == NULL || node->next == NULL || node->prev == NULL) {
+    dll_list_destroy(list);
+    return 2;
+  }
+
+  struct dll_node *prev = node->prev;
+  struct dll_node *next = node->next;
+
+  // Act
+  void *data = NULL;
+  size_t r = dll_list_pop_at(list, &data, 5);
+
+  // Assert
+  ASSERT(r == 1);
+  ASSERT(*(int *)data == 5);
+
+  ASSERT(prev->next == next);
+  ASSERT(next->prev == prev);
+  ASSERT(list->length == 19);
+
+  // Destroy
+  dll_list_destroy(list);
+  free(data);
+  return 0;
+}
+
+int dll_list_test_pop_at_tail(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  dll_list_test_seed_nodes(list, 3);
+  struct dll_node *node = dll_list_get_at(list, 2);
+
+  if (node == NULL) {
+    dll_list_destroy(list);
+    return 2;
+  }
+
+  struct dll_node *prev = node->prev;
+
+  // Act
+  void *data = NULL;
+  size_t r = dll_list_pop_at(list, &data, 2);
+
+  // Assert
+  ASSERT(r == 1);
+  ASSERT(*(int *)data == 2);
+
+  ASSERT(list->tail == prev);
+  ASSERT(list->length == 2);
+
+  // Destroy
+  dll_list_destroy(list);
+  free(data);
+  return 0;
+}
+
+int dll_list_test_pop_at_head(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  dll_list_test_seed_nodes(list, 3);
+  struct dll_node *node = dll_list_get_at(list, 0);
+
+  if (node == NULL) {
+    dll_list_destroy(list);
+    return 2;
+  }
+
+  struct dll_node *next = node->next;
+
+  // Act
+  void *data = NULL;
+  size_t r = dll_list_pop_at(list, &data, 0);
+
+  // Assert
+  ASSERT(r == 1);
+  ASSERT(*(int *)data == 0);
+
+  ASSERT(list->head == next);
+  ASSERT(list->length == 2);
+
+  // Destroy
+  dll_list_destroy(list);
+  free(data);
+  return 0;
+}
+
+int dll_list_test_pop_only_node(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  dll_list_test_seed_nodes(list, 1);
+
+  // Act
+  void *data = NULL;
+  size_t r = dll_list_pop_at(list, &data, 0);
+
+  // Assert
+  ASSERT(r == 1);
+  ASSERT(*(int *)data == 0);
+
+  ASSERT(list->head == NULL);
+  ASSERT(list->tail == NULL);
+  ASSERT(list->length == 0);
+
+  // Destroy
+  dll_list_destroy(list);
+  free(data);
+  return 0;
+}
+
+int dll_list_test_pop_at_invalid(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  dll_list_test_seed_nodes(list, 3);
+
+  // Act
+  void *data = NULL;
+  size_t r = dll_list_pop_at(list, &data, 5);
+
+  // Assert
+  ASSERT(r == 0);
+  ASSERT(data == NULL);
+
+  ASSERT(list->length == 3);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+// remove
+
+int dll_list_test_remove_at_5(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  dll_list_test_seed_nodes(list, 20);
+  struct dll_node *node = dll_list_get_at(list, 5);
+
+  if (node == NULL || node->next == NULL || node->prev == NULL) {
+    dll_list_destroy(list);
+    return 2;
+  }
+
+  struct dll_node *prev = node->prev;
+  struct dll_node *next = node->next;
+
+  // Act
+  size_t r = dll_list_remove_at(list, 5);
+
+  // Assert
+  ASSERT(r == 1);
+
+  ASSERT(prev->next == next);
+  ASSERT(next->prev == prev);
+  ASSERT(list->length == 19);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+int dll_list_test_remove_at_tail(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  dll_list_test_seed_nodes(list, 3);
+  struct dll_node *node = dll_list_get_at(list, 2);
+
+  if (node == NULL) {
+    dll_list_destroy(list);
+    return 2;
+  }
+
+  struct dll_node *prev = node->prev;
+
+  // Act
+  size_t r = dll_list_remove_at(list, 2);
+
+  // Assert
+  ASSERT(r == 1);
+
+  ASSERT(list->tail == prev);
+  ASSERT(list->length == 2);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+int dll_list_test_remove_at_head(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  dll_list_test_seed_nodes(list, 3);
+  struct dll_node *node = dll_list_get_at(list, 0);
+
+  if (node == NULL) {
+    dll_list_destroy(list);
+    return 2;
+  }
+
+  struct dll_node *next = node->next;
+
+  // Act
+  size_t r = dll_list_remove_at(list, 0);
+
+  // Assert
+  ASSERT(r == 1);
+
+  ASSERT(list->head == next);
+  ASSERT(list->length == 2);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+int dll_list_test_remove_only_node(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  dll_list_test_seed_nodes(list, 1);
+
+  // Act
+  size_t r = dll_list_remove_at(list, 0);
+
+  // Assert
+  ASSERT(r == 1);
+
+  ASSERT(list->head == NULL);
+  ASSERT(list->tail == NULL);
+  ASSERT(list->length == 0);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+int dll_list_test_remove_at_invalid(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  dll_list_test_seed_nodes(list, 3);
+
+  // Act
+  size_t r = dll_list_remove_at(list, 5);
+
+  // Assert
+  ASSERT(r == 0);
+
+  ASSERT(list->length == 3);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+// remove by
+
+int dll_list_test_remove_by_even(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  dll_list_test_seed_nodes(list, 20);
+
+  int expected_values[] = {1, 3, 5, 7, 9, 11, 13, 15, 17, 19};
+
+  // Act
+  size_t r = dll_list_remove_by(list, &test_even, NULL);
+
+  // Assert
+  ASSERT(r == 10);
+
+  ASSERT(list->length == 10);
+
+  for (int i = 0; i < 10; i++) {
+    struct dll_node *node = dll_list_get_at(list, i);
+    ASSERT(*(int *)node->data == expected_values[i]);
+  }
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+int dll_list_test_remove_by_empty_input(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+
+  // Act
+  size_t r = dll_list_remove_by(list, &test_even, NULL);
+
+  // Assert
+  ASSERT(r == 0);
+
+  ASSERT(list->length == 0);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+int dll_list_test_remove_by_matching_all(void) {
+  // Assemble
+  struct dll_list *list = dll_list_create();
+  dll_list_test_seed_nodes(list, 20);
+
+  // Act
+  bool ctx = true;
+  size_t r = dll_list_remove_by(list, &test_even, &ctx);
+
+  // Assert
+  ASSERT(r == 20);
+
+  ASSERT(list->length == 0);
+
+  // Destroy
+  dll_list_destroy(list);
+  return 0;
+}
+
+// split by
+
+int dll_list_test_split_by_even(void) {
+  // Assemble
+  struct dll_list *in_list = dll_list_create();
+  struct dll_list *out_list = NULL;
+  dll_list_test_seed_nodes(in_list, 20);
+
+  int expected_evens[] = {0, 2, 4, 6, 8, 10, 12, 14, 16, 18};
+  int expected_odds[] = {1, 3, 5, 7, 9, 11, 13, 15, 17, 19};
+
+  // Act
+  size_t split_count = dll_list_split_by(in_list, &out_list, &test_even, NULL);
+
+  // Assert
+  ASSERT(out_list != NULL);
+  ASSERT(split_count == 10);
+  ASSERT(out_list->length == 10);
+
+  ASSERT(in_list->length == 10);
+
+  for (int i = 0; i < 10; i++) {
+    struct dll_node *even_node = dll_list_get_at(out_list, i);
+    ASSERT(*(int *)even_node->data == expected_evens[i]);
+
+    struct dll_node *odd_node = dll_list_get_at(in_list, i);
+    ASSERT(*(int *)odd_node->data == expected_odds[i]);
+  }
+
+  // Destroy
+  dll_list_destroy(in_list);
+  dll_list_destroy(out_list);
+  return 0;
+}
+
+int dll_list_test_split_by_empty_input(void) {
+  // Assemble
+  struct dll_list *in_list = dll_list_create();
+  struct dll_list *out_list = NULL;
+
+  // Act
+  size_t split_count = dll_list_split_by(in_list, &out_list, &test_even, NULL);
+
+  // Assert
+  ASSERT(out_list != NULL);
+  ASSERT(split_count == 0);
+  ASSERT(out_list->length == 0);
+
+  ASSERT(in_list->length == 0);
+
+  // Destroy
+  dll_list_destroy(in_list);
+  dll_list_destroy(out_list);
+  return 0;
+}
+
+int dll_list_test_split_by_matching_all(void) {
+  // Assemble
+  struct dll_list *in_list = dll_list_create();
+  struct dll_list *out_list = NULL;
+  dll_list_test_seed_nodes(in_list, 20);
+
+  // Act
+  bool override = true;
+  size_t split_count = dll_list_split_by(in_list, &out_list, &test_even, &override);
+
+  // Assert
+  ASSERT(out_list != NULL);
+  ASSERT(split_count == 20);
+  ASSERT(out_list->length == 20);
+
+  ASSERT(in_list->length == 0);
+
+  // Destroy
+  dll_list_destroy(in_list);
+  dll_list_destroy(out_list);
+  return 0;
+}
+
+int dll_list_test_split_by_matching_none(void) {
+  // Assemble
+  struct dll_list *in_list = dll_list_create();
+  struct dll_list *out_list = NULL;
+  dll_list_test_seed_nodes(in_list, 20);
+
+  // Act
+  bool override = false;
+  size_t split_count = dll_list_split_by(in_list, &out_list, &test_even, &override);
+
+  // Assert
+  ASSERT(out_list != NULL);
+  ASSERT(split_count == 0);
+  ASSERT(out_list->length == 0);
+
+  ASSERT(in_list->length == 20);
+
+  // Destroy
+  dll_list_destroy(in_list);
+  dll_list_destroy(out_list);
+  return 0;
+}
+
+int dll_list_test_split_by_invalid_input(void) {
+  // Assemble
+  struct dll_list *in_list = dll_list_create();
+  struct dll_list *out_list_case_1 = NULL;
+  struct dll_list *out_list_case_2 = NULL;
+  dll_list_test_seed_nodes(in_list, 20);
+
+  // Act
+  size_t split_count_case_1 = dll_list_split_by(NULL, &out_list_case_1, &test_even, NULL);
+
+  size_t split_count_case_2 = dll_list_split_by(in_list, &out_list_case_2, NULL, NULL);
+
+  size_t split_count_case_3 = dll_list_split_by(in_list, NULL, &test_even, NULL);
+
+  // Assert
+  ASSERT(out_list_case_1 == NULL);
+  ASSERT(split_count_case_1 == 0);
+
+  ASSERT(out_list_case_2 == NULL);
+  ASSERT(split_count_case_2 == 0);
+
+  ASSERT(split_count_case_3 == 0);
+
+  ASSERT(in_list->length == 20);
+
+  // Destroy
+  dll_list_destroy(in_list);
+  return 0;
+}
+
+SECTION_DEF(DLL_TEST_NODE_REMOVAL) {
+  // pop
+  TEST(dll_list_test_pop_at_5);
+  TEST(dll_list_test_pop_at_tail);
+  TEST(dll_list_test_pop_at_head);
+  TEST(dll_list_test_pop_only_node);
+  TEST(dll_list_test_pop_at_invalid);
+
+  // remove
+  TEST(dll_list_test_remove_at_5);
+  TEST(dll_list_test_remove_at_tail);
+  TEST(dll_list_test_remove_at_head);
+  TEST(dll_list_test_remove_only_node);
+  TEST(dll_list_test_remove_at_invalid);
+
+  // remove by
+  TEST(dll_list_test_remove_by_even);
+  TEST(dll_list_test_remove_by_empty_input);
+  TEST(dll_list_test_remove_by_matching_all);
+
+  // split by
+  TEST(dll_list_test_split_by_even);
+  TEST(dll_list_test_split_by_empty_input);
+  TEST(dll_list_test_split_by_matching_all);
+  TEST(dll_list_test_split_by_matching_none);
+  TEST(dll_list_test_split_by_invalid_input);
+}
+
+//
+// ---- MAIN ----
+//
+int main(void) {
+  SECTION(DLL_TEST_LIFETIME);
+  SECTION(DLL_TEST_ADD);
+  SECTION(DLL_TEST_NODE_GET);
+  SECTION(DLL_TEST_NODE_REMOVAL);
+
+  RUN_TESTS();
+}
