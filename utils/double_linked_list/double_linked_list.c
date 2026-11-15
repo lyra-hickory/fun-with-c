@@ -243,7 +243,7 @@ struct dll_node *dll_list_get_at(struct dll_list *list, size_t index) {
 // ---- NODE REMOVAL ----
 //
 
-size_t dll_list_pop_at(struct dll_list *list, size_t index, void **out) {
+size_t dll_list_pop_at(struct dll_list *list, void **out, size_t index) {
   if (list == NULL || index >= list->length) {
     return 0;
   }
@@ -306,27 +306,33 @@ size_t dll_list_remove_by(struct dll_list *list, dll_test_fn test_fn, void *ctx)
   return destroyed_count;
 }
 
-struct dll_list *dll_list_split_by(struct dll_list *list, dll_test_fn test_fn, void *ctx) {
-  if (list == NULL || test_fn == NULL) {
-    return NULL;
+size_t dll_list_split_by(struct dll_list *in_list, struct dll_list **out_list, dll_test_fn test_fn,
+                         void *ctx) {
+  size_t split_count = 0;
+
+  if (in_list == NULL || out_list == NULL || test_fn == NULL) {
+    return split_count;
   }
 
   struct dll_list *matched_list = dll_list_create();
   if (matched_list == NULL) {
-    return NULL;
+    return split_count;
   }
 
-  struct dll_node *n = list->head;
+  struct dll_node *n = in_list->head;
   while (n != NULL) {
     struct dll_node *next = n->next;
 
     if (test_fn(n->data, ctx)) {
-      dll_list_unlink_node(list, n);
+      dll_list_unlink_node(in_list, n);
       dll_list_link_node_tail(matched_list, n);
+      split_count++;
     }
 
     n = next;
   }
 
-  return matched_list;
+  *out_list = matched_list;
+
+  return split_count;
 }

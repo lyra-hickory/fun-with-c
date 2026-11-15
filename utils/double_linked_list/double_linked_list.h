@@ -66,7 +66,7 @@ struct dll_node *dll_list_get_at(struct dll_list *list, size_t index);
 
 // **out for returning the data, ownership of data is on the user
 // node gets destroyed
-size_t dll_list_pop_at(struct dll_list *list, size_t index, void **out);
+size_t dll_list_pop_at(struct dll_list *list, void **out, size_t index);
 
 // Complete cleanup, node is destroyed and so is the data
 size_t dll_list_remove_at(struct dll_list *list, size_t index);
@@ -78,9 +78,8 @@ size_t dll_list_remove_at(struct dll_list *list, size_t index);
 // Note that the test_fn acts on node->data
 size_t dll_list_remove_by(struct dll_list *list, dll_test_fn test_fn, void *ctx);
 
-// Split by a match_fn acting on the data, returning a new list with the matched nodes
-// true   :   node gets popped
-// false  :   node gets skipped
+// Split by a match_fn acting on the data, returning a new list with the matched nodes at the given
+// pointer true   :   node gets popped false  :   node gets skipped
 //
 // Note that the test_fn acts on node->data
 //
@@ -88,7 +87,8 @@ size_t dll_list_remove_by(struct dll_list *list, dll_test_fn test_fn, void *ctx)
 // not new nodes with the same data
 //
 // Note that NULL means a failure occured
-struct dll_list *dll_list_split_by(struct dll_list *list, dll_test_fn test_fn, void *ctx);
+size_t dll_list_split_by(struct dll_list *in_list, struct dll_list **out_list, dll_test_fn test_fn,
+                         void *ctx);
 
 // ---- END ----
 #endif

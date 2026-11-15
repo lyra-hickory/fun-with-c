@@ -1,5 +1,6 @@
 #include "../../testing_harness/testing_harness.h"
 #include "../double_linked_list.h"
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -431,7 +432,7 @@ int dll_list_test_pop_at_5(void) {
 
   // Act
   void *data = NULL;
-  size_t r = dll_list_pop_at(list, 5, &data);
+  size_t r = dll_list_pop_at(list, &data, 5);
 
   // Assert
   ASSERT(r == 1);
@@ -462,7 +463,7 @@ int dll_list_test_pop_at_tail(void) {
 
   // Act
   void *data = NULL;
-  size_t r = dll_list_pop_at(list, 2, &data);
+  size_t r = dll_list_pop_at(list, &data, 2);
 
   // Assert
   ASSERT(r == 1);
@@ -492,7 +493,7 @@ int dll_list_test_pop_at_head(void) {
 
   // Act
   void *data = NULL;
-  size_t r = dll_list_pop_at(list, 0, &data);
+  size_t r = dll_list_pop_at(list, &data, 0);
 
   // Assert
   ASSERT(r == 1);
@@ -514,7 +515,7 @@ int dll_list_test_pop_only_node(void) {
 
   // Act
   void *data = NULL;
-  size_t r = dll_list_pop_at(list, 0, &data);
+  size_t r = dll_list_pop_at(list, &data, 0);
 
   // Assert
   ASSERT(r == 1);
@@ -537,7 +538,7 @@ int dll_list_test_pop_at_invalid(void) {
 
   // Act
   void *data = NULL;
-  size_t r = dll_list_pop_at(list, 5, &data);
+  size_t r = dll_list_pop_at(list, &data, 5);
 
   // Assert
   ASSERT(r == 0);
@@ -740,93 +741,131 @@ int dll_list_test_remove_by_matching_all(void) {
 
 int dll_list_test_split_by_even(void) {
   // Assemble
-  struct dll_list *list = dll_list_create();
-  dll_list_test_seed_nodes(list, 20);
+  struct dll_list *in_list = dll_list_create();
+  struct dll_list *out_list = NULL;
+  dll_list_test_seed_nodes(in_list, 20);
 
   int expected_evens[] = {0, 2, 4, 6, 8, 10, 12, 14, 16, 18};
   int expected_odds[] = {1, 3, 5, 7, 9, 11, 13, 15, 17, 19};
 
   // Act
-  struct dll_list *matched_list = dll_list_split_by(list, &test_even, NULL);
+  size_t split_count = dll_list_split_by(in_list, &out_list, &test_even, NULL);
 
   // Assert
-  ASSERT(matched_list != NULL);
-  ASSERT(matched_list->length == 10);
+  ASSERT(out_list != NULL);
+  ASSERT(split_count == 10);
+  ASSERT(out_list->length == 10);
 
-  ASSERT(list->length == 10);
+  ASSERT(in_list->length == 10);
 
   for (int i = 0; i < 10; i++) {
-    struct dll_node *even_node = dll_list_get_at(matched_list, i);
+    struct dll_node *even_node = dll_list_get_at(out_list, i);
     ASSERT(*(int *)even_node->data == expected_evens[i]);
 
-    struct dll_node *odd_node = dll_list_get_at(list, i);
+    struct dll_node *odd_node = dll_list_get_at(in_list, i);
     ASSERT(*(int *)odd_node->data == expected_odds[i]);
   }
 
   // Destroy
-  dll_list_destroy(list);
-  dll_list_destroy(matched_list);
+  dll_list_destroy(in_list);
+  dll_list_destroy(out_list);
   return 0;
 }
 
 int dll_list_test_split_by_empty_input(void) {
   // Assemble
-  struct dll_list *list = dll_list_create();
+  struct dll_list *in_list = dll_list_create();
+  struct dll_list *out_list = NULL;
 
   // Act
-  struct dll_list *matched_list = dll_list_split_by(list, &test_even, NULL);
+  size_t split_count = dll_list_split_by(in_list, &out_list, &test_even, NULL);
 
   // Assert
-  ASSERT(matched_list != NULL);
-  ASSERT(matched_list->length == 0);
+  ASSERT(out_list != NULL);
+  ASSERT(split_count == 0);
+  ASSERT(out_list->length == 0);
 
-  ASSERT(list->length == 0);
+  ASSERT(in_list->length == 0);
 
   // Destroy
-  dll_list_destroy(list);
-  dll_list_destroy(matched_list);
+  dll_list_destroy(in_list);
+  dll_list_destroy(out_list);
   return 0;
 }
 
 int dll_list_test_split_by_matching_all(void) {
   // Assemble
-  struct dll_list *list = dll_list_create();
-  dll_list_test_seed_nodes(list, 20);
+  struct dll_list *in_list = dll_list_create();
+  struct dll_list *out_list = NULL;
+  dll_list_test_seed_nodes(in_list, 20);
 
   // Act
-  bool ctx = true;
-  struct dll_list *matched_list = dll_list_split_by(list, &test_even, &ctx);
+  bool override = true;
+  size_t split_count = dll_list_split_by(in_list, &out_list, &test_even, &override);
 
   // Assert
-  ASSERT(matched_list != NULL);
-  ASSERT(matched_list->length == 20);
+  ASSERT(out_list != NULL);
+  ASSERT(split_count == 20);
+  ASSERT(out_list->length == 20);
 
-  ASSERT(list->length == 0);
+  ASSERT(in_list->length == 0);
 
   // Destroy
-  dll_list_destroy(list);
-  dll_list_destroy(matched_list);
+  dll_list_destroy(in_list);
+  dll_list_destroy(out_list);
   return 0;
 }
 
 int dll_list_test_split_by_matching_none(void) {
   // Assemble
-  struct dll_list *list = dll_list_create();
-  dll_list_test_seed_nodes(list, 20);
+  struct dll_list *in_list = dll_list_create();
+  struct dll_list *out_list = NULL;
+  dll_list_test_seed_nodes(in_list, 20);
 
   // Act
-  bool ctx = false;
-  struct dll_list *matched_list = dll_list_split_by(list, &test_even, &ctx);
+  bool override = false;
+  size_t split_count = dll_list_split_by(in_list, &out_list, &test_even, &override);
 
   // Assert
-  ASSERT(matched_list != NULL);
-  ASSERT(matched_list->length == 0);
+  ASSERT(out_list != NULL);
+  ASSERT(split_count == 0);
+  ASSERT(out_list->length == 0);
 
-  ASSERT(list->length == 20);
+  ASSERT(in_list->length == 20);
 
   // Destroy
-  dll_list_destroy(list);
-  dll_list_destroy(matched_list);
+  dll_list_destroy(in_list);
+  dll_list_destroy(out_list);
+  return 0;
+}
+
+int dll_list_test_split_by_invalid_input(void) {
+  // Assemble
+  struct dll_list *in_list = dll_list_create();
+  struct dll_list *out_list_case_1 = NULL;
+  struct dll_list *out_list_case_2 = NULL;
+  dll_list_test_seed_nodes(in_list, 20);
+
+  // Act
+  size_t split_count_case_1 = dll_list_split_by(NULL, &out_list_case_1, &test_even, NULL);
+
+  size_t split_count_case_2 = dll_list_split_by(in_list, &out_list_case_2, NULL, NULL);
+
+  size_t split_count_case_3 = dll_list_split_by(in_list, NULL, &test_even, NULL);
+
+  // Assert
+  ASSERT(out_list_case_1 == NULL);
+  ASSERT(split_count_case_1 == 0);
+
+  ASSERT(out_list_case_2 == NULL);
+  ASSERT(split_count_case_2 == 0);
+
+  ASSERT(split_count_case_3 == 0);
+
+  ASSERT(in_list->length == 20);
+
+  // Destroy
+  dll_list_destroy(in_list);
   return 0;
 }
 
@@ -855,6 +894,7 @@ SECTION_DEF(DLL_TEST_NODE_REMOVAL) {
   TEST(dll_list_test_split_by_empty_input);
   TEST(dll_list_test_split_by_matching_all);
   TEST(dll_list_test_split_by_matching_none);
+  TEST(dll_list_test_split_by_invalid_input);
 }
 
 //
