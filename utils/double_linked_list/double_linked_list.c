@@ -217,6 +217,7 @@ struct dll_node *dll_list_get_at(struct dll_list *list, size_t index) {
   }
 
   struct dll_node *node;
+  // TODO: this is messy and way too indendet. Make pretty /:
   if (index > list->length / 2) {
     size_t steps_back = list->length - (index + 1);
     node = list->tail;
@@ -283,8 +284,8 @@ size_t dll_list_remove_at(struct dll_list *list, size_t index) {
   return 1;
 }
 
-size_t dll_list_remove_by(struct dll_list *list, dll_test_fn test_fn, void *ctx) {
-  if (list == NULL || test_fn == NULL) {
+size_t dll_list_remove_by(struct dll_list *list, dll_match_fn match_fn, void *ctx) {
+  if (list == NULL || match_fn == NULL) {
     return 0;
   }
 
@@ -294,7 +295,7 @@ size_t dll_list_remove_by(struct dll_list *list, dll_test_fn test_fn, void *ctx)
   while (n != NULL) {
     struct dll_node *next = n->next;
 
-    if (test_fn(n->data, ctx)) {
+    if (match_fn(n->data, ctx)) {
       dll_list_unlink_node(list, n);
       dll_list_destroy_node(n);
       destroyed_count++;
@@ -306,11 +307,11 @@ size_t dll_list_remove_by(struct dll_list *list, dll_test_fn test_fn, void *ctx)
   return destroyed_count;
 }
 
-size_t dll_list_split_by(struct dll_list *in_list, struct dll_list **out_list, dll_test_fn test_fn,
-                         void *ctx) {
+size_t dll_list_split_by(struct dll_list *in_list, struct dll_list **out_list,
+                         dll_match_fn match_fn, void *ctx) {
   size_t split_count = 0;
 
-  if (in_list == NULL || out_list == NULL || test_fn == NULL) {
+  if (in_list == NULL || out_list == NULL || match_fn == NULL) {
     return split_count;
   }
 
@@ -323,7 +324,7 @@ size_t dll_list_split_by(struct dll_list *in_list, struct dll_list **out_list, d
   while (n != NULL) {
     struct dll_node *next = n->next;
 
-    if (test_fn(n->data, ctx)) {
+    if (match_fn(n->data, ctx)) {
       dll_list_unlink_node(in_list, n);
       dll_list_link_node_tail(matched_list, n);
       split_count++;

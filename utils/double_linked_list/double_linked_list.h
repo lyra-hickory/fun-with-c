@@ -10,7 +10,9 @@
 
 typedef void (*destructor_fn)(void *data);
 
-typedef bool (*dll_test_fn)(void *data, void *ctx);
+typedef bool (*dll_match_fn)(void *data, void *ctx);
+
+typedef bool (*dll_compare_fn)(void *data_front, void *data_back, void *ctx);
 
 // dll_type is owned by the implementation, never by dll
 // dll_type->destroy = NULL; is a noop for destruction of data
@@ -76,10 +78,13 @@ size_t dll_list_remove_at(struct dll_list *list, size_t index);
 // false  :   node gets skipped
 //
 // Note that the test_fn acts on node->data
-size_t dll_list_remove_by(struct dll_list *list, dll_test_fn test_fn, void *ctx);
+size_t dll_list_remove_by(struct dll_list *list, dll_match_fn match_fn, void *ctx);
 
 // Split by a match_fn acting on the data, returning a new list with the matched nodes at the given
-// pointer true   :   node gets popped false  :   node gets skipped
+// pointer
+//
+// true   :   node gets popped
+// false  :   node gets skipped
 //
 // Note that the test_fn acts on node->data
 //
@@ -87,8 +92,18 @@ size_t dll_list_remove_by(struct dll_list *list, dll_test_fn test_fn, void *ctx)
 // not new nodes with the same data
 //
 // Note that NULL means a failure occured
-size_t dll_list_split_by(struct dll_list *in_list, struct dll_list **out_list, dll_test_fn test_fn,
-                         void *ctx);
+size_t dll_list_split_by(struct dll_list *in_list, struct dll_list **out_list,
+                         dll_match_fn match_fn, void *ctx);
+
+//
+// ---- NODE SORT ----
+//
+
+// Sort the nodes by match_fn
+//
+// true   :   ??
+// false  :   ??
+// void dll_list_sort_by(struct dll_list *list, dll_compare_fn test_fn, void *ctx);
 
 // ---- END ----
 #endif
